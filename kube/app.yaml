@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: general
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-job-trigger
+  namespace: general
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-job-trigger
+  namespace: dedicated
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  resourceNames: ["simple-job"]
+  verbs: ["get", "delete"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-job-trigger
+  namespace: dedicated
+subjects:
+- kind: ServiceAccount
+  name: app-job-trigger # Name of the ServiceAccount
+  namespace: general
+roleRef:
+  kind: Role # This must be Role or ClusterRole
+  name: app-job-trigger # This mus match the name of the Role or ClusterRole you wish to bind to
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-job-trigger
+  namespace: general
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: app-job-trigger
+  template:
+    metadata:
+      labels:
+        app: app-job-trigger
+    spec:
+      serviceAccountName: app-job-trigger
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              preference:
+                matchExpressions:
+                - key: type
+                  operator: In
+                  values:
+                  - app-worker-node
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: name
+                operator: In
+                values:
+                  - app
+            topologyKey: topology.kubernetes.io/zone
+      containers:
+      - name: app
+        image: registry.local:5000/app-job-trigger:local
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-job-trigger
+  namespace: general
+spec:
+  selector:
+    app: app-job-trigger
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: LoadBalancer

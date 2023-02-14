@@ -1,0 +1,48 @@
+@startuml
+
+!theme plain
+
+rectangle "k8s cluster" as k8s_cluster #BDD7EE;line.dashed {
+    top to bottom direction
+
+    rectangle "Control plane - master node" #9FAED6;line.dashed {
+        rectangle "API server" as api_server #B7F7F3 {
+        }
+        rectangle "Scheduler" #B7F7F3 {
+        }
+    }
+
+    rectangle "Data Plane - worker nodes" #9FAED6;line.dashed {
+        node "general worker node" #9FCBD6 {
+            rectangle "Namespace: general" #BDD7EE;line.dotted {
+                component "app Deployment" #B7F7F3 {
+                    collections "pods" as app_pods
+                }
+                component "app Service" as app_service #B7F7F3 {
+                }
+                component "app Service Account" as service_account #B7F7F3 {
+                }
+            }
+        }
+
+        node "dedicated worker node" #9FCBD6 {
+            rectangle "Namespace: dedicated" #BDD7EE;line.dotted {
+                component "rbac Role" as role #B7F7F3 {
+                }
+                component "rbac RoleBinding" as role_binding #B7F7F3 {
+                }
+                component "Job" #B7F7F3 {
+                    collections pods
+                }
+            }
+        }
+    }
+
+    role_binding ..> role
+    role_binding ..> service_account
+    app_pods ..> service_account
+    app_pods --> api_server
+    app_pods -- app_service
+}
+
+@enduml

@@ -1,0 +1,48 @@
+@startuml
+
+!theme plain
+
+title app interaction with k8s API
+
+autonumber
+
+participant app
+participant "k8s API" as api_server
+
+activate app
+app->api_server: get "simple-job" job
+note right of app
+we can add some validations here
+like checking if the job exists and
+maybe abort the operation in case
+it's in execution.
+end note
+activate api_server
+api_server-->app
+deactivate api_server
+
+app->app: remove "controler-uid" label
+note right of app
+we need to remove this label
+from selector labels and
+from template metadata,
+otherwise we get errors from
+the api.
+end note
+
+app->api_server: delete "simple-job" job
+activate api_server
+api_server-->app
+deactivate api_server
+
+app->api_server: create "simple-job" job
+note right of app
+it uses the same job spec
+fetched in the first request.
+end note
+activate api_server
+api_server-->app
+deactivate api_server
+
+deactivate app
+@enduml

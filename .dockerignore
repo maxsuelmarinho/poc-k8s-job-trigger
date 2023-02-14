@@ -1,0 +1,11 @@
+kube/
+k3s/
+.editorconfig
+Makefile
+README.md
+.gradle/
+.idea/
+build/
+.gitignore
+docker-compose.yml
+kubeconfig.yaml

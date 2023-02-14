@@ -1,0 +1,120 @@
+# to run define K3S_TOKEN, K3S_VERSION is optional, eg:
+#   K3S_TOKEN=${RANDOM}${RANDOM}${RANDOM} docker-compose up
+version: '3'
+services:
+  server:
+    image: "rancher/k3s:${K3S_VERSION:-latest}"
+    container_name: "master-node"
+    command:
+    - server
+    - --node-name=server
+    - --with-node-id
+    tmpfs:
+      - /run
+      - /var/run
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+    privileged: true
+    restart: always
+    environment:
+      - K3S_TOKEN=${K3S_TOKEN:-s3cr3t}
+      - K3S_KUBECONFIG_OUTPUT=/output/kubeconfig.yaml
+      - K3S_KUBECONFIG_MODE=666
+    volumes:
+      - ./k3s/registries.yaml:/etc/rancher/k3s/registries.yaml
+      - k3s-server:/var/lib/rancher/k3s
+      # This is just so that we get the kubeconfig file out
+      - .:/output
+    ports:
+      - 6443:6443  # Kubernetes API Server
+      - 80:80      # Ingress controller port 80
+      - 443:443    # Ingress controller port 443
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - netstat -tuln | grep LISTEN | grep 6443
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      registry.local:
+        condition: service_healthy
+
+  agent-1:
+    image: "rancher/k3s:${K3S_VERSION:-latest}"
+    container_name: "general-worker-node"
+    command:
+      - agent
+      - --node-name=worker
+      - --with-node-id
+      - --node-label
+      - type=general-worker-node
+    tmpfs:
+      - /run
+      - /var/run
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+    privileged: true
+    restart: always
+    environment:
+      - K3S_URL=https://server:6443
+      - K3S_TOKEN=${K3S_TOKEN:-s3cr3t}
+    volumes:
+      - ./k3s/registries.yaml:/etc/rancher/k3s/registries.yaml
+    depends_on:
+      server:
+        condition: service_healthy
+
+  agent-2:
+    image: "rancher/k3s:${K3S_VERSION:-latest}"
+    container_name: "dedicated-worker-node"
+    command:
+      - agent
+      - --node-name=dedicated-worker
+      - --with-node-id
+      - --node-taint
+      - dedicated=batch:NoSchedule
+      - --node-label
+      - dedicated=batch
+      - --node-label
+      - type=dedicated-worker-node
+    tmpfs:
+      - /run
+      - /var/run
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+    privileged: true
+    restart: always
+    environment:
+      - K3S_URL=https://server:6443
+      - K3S_TOKEN=${K3S_TOKEN:-s3cr3t}
+    volumes:
+      - ./k3s/registries.yaml:/etc/rancher/k3s/registries.yaml
+    depends_on:
+      server:
+        condition: service_healthy
+
+  registry.local:
+    image: "registry:2"
+    container_name: "registry"
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - netstat -tuln | grep LISTEN | grep 5000
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  k3s-server: {}

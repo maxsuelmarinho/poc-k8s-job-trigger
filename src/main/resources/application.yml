@@ -1,0 +1,8 @@
+management:
+  endpoint.health.probes.enabled: true
+  health:
+    livenessState.enabled: true
+    readinessState.enabled: true
+
+# official or fabric8
+kubernetes.api: official

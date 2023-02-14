@@ -1,0 +1,37 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+max_line_length = 120
+tab_width = 4
+
+[{*.proto,*.yml,*.yaml}]
+indent_size = 2
+tab_width = 2
+
+[{*.scala,*.sc}]
+indent_size = 2
+tab_width = 2
+
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = 100
+
+[{*.bash,*.sh,*.zsh}]
+indent_size = 2
+tab_width = 2
+
+[{*.har,*.json,composer.lock}]
+indent_size = 2
+
+[{*.gant,*.gradle,*.groovy,*.gson,*.gy}]
+ij_groovy_label_indent_size = 4
+ij_groovy_spaces_within_brackets = true
+ij_groovy_spaces_within_gstring_injection_braces = true
+
+[Makefile]
+indent_style = tab

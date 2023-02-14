@@ -1,0 +1,21 @@
+@startuml
+
+!theme plain
+
+rectangle "Namespace: general" #line.dotted {
+    component "app Service Account" as service_account #B7F7F3 {
+    }
+}
+
+rectangle "Namespace: dedicated" #line.dotted {
+    component "rbac Role" as role #B7F7F3 {
+    }
+
+    component "rbac RoleBinding" as role_binding #B7F7F3 {
+    }
+}
+
+role_binding ..> role
+role_binding ..> service_account
+
+@enduml
